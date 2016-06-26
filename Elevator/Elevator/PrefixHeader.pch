@@ -1,0 +1,34 @@
+//
+//  PrefixHeader.pch
+//  Question
+//
+//  Created by xuzx on 16/6/25.
+//  Copyright © 2016年 xuzx. All rights reserved.
+//
+
+#ifndef PrefixHeader_pch
+#define PrefixHeader_pch
+
+#define LevelCount 9
+
+#import "NSMutableArray+XZX.h"
+
+typedef enum{
+    Up,
+    Down,
+    Stopping,
+    OpenningDoor,
+    Waiting,
+    ClosingDoor
+}ElevatorStatus;
+
+typedef enum{
+    Upward,
+    Stop,
+    Downward
+}Direction;
+
+// Include any system framework and library headers here that should be included in all compilation units.
+// You will also need to set the Prefix Header build setting of one or more of your targets to reference this file.
+
+#endif /* PrefixHeader_pch */
