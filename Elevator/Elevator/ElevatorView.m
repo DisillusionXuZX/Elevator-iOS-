@@ -65,16 +65,13 @@
 - (void)doorOpen{
     [self.layer removeAllAnimations];
     [UIView animateWithDuration:0.5 animations:^{
-        
         self.door.frame = CGRectMake(self.frame.size.width * 0.3, 0, self.frame.size.width * 0.4, self.frame.size.height);
     }];
-    
 }
 
 - (void)doorClose{
     [self.layer removeAllAnimations];
     [UIView animateWithDuration:0.5 animations:^{
-        
         self.door.frame = CGRectMake(self.frame.size.width * 0.475, 0, self.frame.size.width * 0.05, self.frame.size.height);
     }];
     

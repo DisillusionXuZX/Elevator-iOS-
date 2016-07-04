@@ -12,8 +12,10 @@
 @interface ViewController ()
 //当前电梯所在层数
 @property (atomic, assign)NSInteger levelNum;
-//存储需要到达的楼层的数组
-@property (atomic, strong)NSMutableArray *levelArray;
+//存储上行方向需要到达的楼层的数组
+@property (atomic, strong)NSMutableArray *upLevelArray;
+//存储下行方向需要到达的楼层的数组
+@property (atomic, strong)NSMutableArray *downLevelArray;
 //当前电梯的状态
 @property (atomic, assign)ElevatorStatus status;
 //存储每一层电梯的view的数组
@@ -109,15 +111,21 @@
     UIButton *button = (UIButton *)sender;
     button.selected = YES;
     NSInteger levelNumber = button.tag % 9;
-    [self elevatorRun:levelNumber inside:YES];
-    
+    if(levelNumber >= self.levelNum){
+        [self elevatorRun:levelNumber inside:YES up:YES];
+    }
+    else{
+        [self elevatorRun:levelNumber inside:YES up:NO];
+    }
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    //初始化self.levelArray
-    self.levelArray = [NSMutableArray array];
+    //初始化self.upLevelArray
+    self.upLevelArray = [NSMutableArray array];
+    //初始化self.downLevelArray
+    self.downLevelArray = [NSMutableArray array];
     //初始电梯停的层数为0
     self.levelNum = 0;
     //初始电梯状态为停止状态
@@ -149,29 +157,46 @@
     UIButton *button = notification.userInfo[@"button"];
     button.selected = YES;
     NSInteger tag = 8 - [string integerValue] % 9;
-    [self elevatorRun:tag inside:NO];
+    if(tag > self.levelNum){
+        [self elevatorRun:tag inside:NO up:YES];
+    }else{
+        [self elevatorRun:tag inside:NO up:NO];
+    }
 }
 
 //点击楼层数按钮调用的方法
-- (void)elevatorRun:(NSInteger)levelNum inside:(BOOL)inside{
+- (void)elevatorRun:(NSInteger)levelNum inside:(BOOL)inside up:(BOOL)up{
     NSInteger levelNumber = levelNum % 9;
     switch (self.status) {
         case Up:
-            [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             break;
             
         case Down:
-            [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             break;
             
         case Stopping:
             if(self.levelNum == levelNumber){
                 if(inside){
+                    [self cancelSelectedWithLevelNumber:levelNumber];
                     break;
                 }
                 self.status = OpenningDoor;
             }else{
-                [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             }
             break;
             
@@ -185,7 +210,11 @@
                     self.status = OpenningDoor;
                 }
             }else{
-                [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             }
             break;
             
@@ -199,7 +228,11 @@
                     self.status = OpenningDoor;
                 }
             }else{
-                [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             }
             break;
             
@@ -214,7 +247,11 @@
                     
                 }
             }else{
-                [self.levelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                if(up){
+                    [self.upLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }else{
+                    [self.downLevelArray addObjectWithoutDuplicated:[NSString stringWithFormat:@"%ld", levelNumber]];
+                }
             }
             break;
             
@@ -231,6 +268,7 @@
         self.direction = Stop;
         return;
     }
+    [self checkWrongState];
     ElevatorView *currentElevatorView = (ElevatorView *)self.elevatorViewArray[LevelCount - self.levelNum - 1];
     ElevatorView *upElevatorView = nil;
     ElevatorView *bottomElevatorView = nil;
@@ -245,9 +283,9 @@
             currentElevatorView.elevatorView.hidden = YES;
             currentElevatorView.door.hidden = YES;
             self.levelNum ++;
-            if([self.levelArray containsObject:[NSString stringWithFormat:@"%ld", self.levelNum]]){
+            if([self.upLevelArray containsObject:[NSString stringWithFormat:@"%ld", self.levelNum]]){
                 self.status = OpenningDoor;
-                [self.levelArray removeObject:[NSString stringWithFormat:@"%ld", self.levelNum]];
+                [self.upLevelArray removeObject:[NSString stringWithFormat:@"%ld", self.levelNum]];
             }
             upElevatorView.elevatorView.hidden = NO;
             upElevatorView.door.hidden = NO;
@@ -258,9 +296,9 @@
             currentElevatorView.elevatorView.hidden = YES;
             currentElevatorView.door.hidden = YES;
             self.levelNum --;
-            if([self.levelArray containsObject:[NSString stringWithFormat:@"%ld", self.levelNum]]){
+            if([self.downLevelArray containsObject:[NSString stringWithFormat:@"%ld", self.levelNum]]){
                 self.status = OpenningDoor;
-                [self.levelArray removeObject:[NSString stringWithFormat:@"%ld", self.levelNum]];
+                [self.downLevelArray removeObject:[NSString stringWithFormat:@"%ld", self.levelNum]];
             }
             bottomElevatorView.elevatorView.hidden = NO;
             bottomElevatorView.door.hidden = NO;
@@ -268,16 +306,13 @@
             break;
             
         case Stopping:
-            if([self getMaxNumInArray:self.levelArray] < self.levelNum){
+            if (([self getMaxNumInArray:self.upLevelArray] < self.levelNum) || ([self getMaxNumInArray:self.downLevelArray] < self.levelNum)) {
                 self.status = Down;
                 self.direction = Downward;
-            }else if([self getMaxNumInArray:self.levelArray] > self.levelNum){
+            }else if(([self getMinNumInArray:self.upLevelArray] > self.levelNum) || ([self getMinNumInArray:self.downLevelArray] > self.levelNum)){
                 self.status = Up;
                 self.direction = Upward;
-            }else{
-                self.direction = Stop;
             }
-            
             break;
             
         case OpenningDoor:
@@ -288,6 +323,23 @@
                 break;
             }
             [currentElevatorView doorOpen];
+            if(self.direction == Upward){
+                if((self.upLevelArray.count == 0) && ((([self getMaxNumInArray:self.downLevelArray] < self.levelNum)) && (self.downLevelArray.count > 0))){
+                    self.direction = Downward;
+                }else if((self.upLevelArray.count == 0) && (self.downLevelArray.count == 0)){
+                    self.direction = Stop;
+                }else{
+                    self.direction = Upward;
+                }
+            }else if(self.direction == Downward){
+                if((([self getMinNumInArray:self.upLevelArray] > self.levelNum) && (self.upLevelArray.count > 0)) && (self.downLevelArray.count == 0)){
+                    self.direction = Upward;
+                }else if((self.upLevelArray.count == 0) && (self.downLevelArray.count == 0)){
+                    self.direction = Stop;
+                }else{
+                    self.direction = Downward;
+                }
+            }
             self.status = Waiting;
             break;
             
@@ -298,23 +350,12 @@
             
         case ClosingDoor:
             [currentElevatorView doorClose];
-            if([self getMaxNumInArray:self.levelArray] < self.levelNum){
-                self.status = Down;
-                self.direction = Downward;
-            }else if([self getMinNumInArray:self.levelArray] > self.levelNum){
+            if (self.direction == Upward) {
                 self.status = Up;
-                self.direction = Upward;
-            }else if(self.levelArray.count == 0){
-                self.direction = Stop;
-                self.status = Stopping;
+            }else if(self.direction == Downward){
+                self.status = Down;
             }else{
-                if (self.direction == Upward) {
-                    self.status = Up;
-                }else if(self.direction == Downward){
-                    self.status = Down;
-                }else{
-                    self.status = Stopping;
-                }
+                self.status = Stopping;
             }
             break;
             
@@ -387,6 +428,21 @@
     }
 }
 
+//由于操作问题可能导致错误情况发生(比如上行数组中的最大元素却小于当前楼层数)，所以要修正
+- (void)checkWrongState{
+    if((self.upLevelArray.count > 0) && ([self getMaxNumInArray:self.upLevelArray] < self.levelNum)){
+        for (NSString *str in self.upLevelArray) {
+            [self.downLevelArray addObjectWithoutDuplicated:str];
+        }
+        [self.upLevelArray removeAllObjects];
+    }
+    if((self.downLevelArray.count > 0) && ([self getMinNumInArray:self.downLevelArray] > self.levelNum)){
+        for (NSString *str in self.downLevelArray) {
+            [self.upLevelArray addObjectWithoutDuplicated:str];
+        }
+        [self.downLevelArray removeAllObjects];
+    }
+}
 
 - (void)dealloc{
     [[NSNotificationCenter defaultCenter] removeObserver:self];
